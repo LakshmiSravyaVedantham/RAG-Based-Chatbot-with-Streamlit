@@ -85,45 +85,61 @@ User Input
 
 ## Installation
 
-**1. Clone the repository**
+### Option A: pip install (recommended)
+
+```bash
+pip install docqa-rag
+```
+
+### Option B: From source
 
 ```bash
 git clone https://github.com/LakshmiSravyaVedantham/RAG-Based-Chatbot-with-Streamlit.git
 cd RAG-Based-Chatbot-with-Streamlit
+pip install -e .
 ```
 
-**2. Create and activate a virtual environment**
+### Option C: With Streamlit UI
 
 ```bash
-python -m venv venv
-source venv/bin/activate        # macOS / Linux
-venv\Scripts\activate           # Windows
+pip install "docqa-rag[ui]"
 ```
 
-**3. Install Python dependencies**
-
-```bash
-pip install streamlit langchain langchain-openai langchain-community \
-    langchain-text-splitters langchainhub faiss-cpu openai \
-    pypdf docx2txt unstructured
-pip install "unstructured[pdf]"
-```
-
-**4. Install Poppler (required for PDF support)**
+**PDF support** requires Poppler:
 
 | Platform | Command |
 |---|---|
 | macOS | `brew install poppler` |
-| Ubuntu / Debian | `sudo apt update && sudo apt install poppler-utils` |
-| Windows | Download from [poppler-windows](https://github.com/oschwartz10612/poppler-windows/releases), extract, and add `bin\` to PATH |
-
-Verify the installation: `pdftotext -v`
+| Ubuntu / Debian | `sudo apt install poppler-utils` |
+| Windows | Download from [poppler-windows](https://github.com/oschwartz10612/poppler-windows/releases) and add `bin\` to PATH |
 
 ---
 
 ## Usage
 
-**Start the application**
+### Python API
+
+```python
+from docqa import DocumentQA
+
+qa = DocumentQA(openai_api_key="sk-...")
+qa.index(["contract.pdf", "notes.txt"])
+
+answer = qa.ask("What are the payment terms?")
+print(answer)
+```
+
+### CLI
+
+```bash
+# Chat with documents
+docqa report.pdf meeting_notes.txt
+
+# General chat (no files)
+docqa
+```
+
+### Streamlit UI
 
 ```bash
 streamlit run chatbot.py
@@ -131,23 +147,11 @@ streamlit run chatbot.py
 
 Open `http://localhost:8501` in your browser.
 
-**General Chat mode**
+**General Chat mode** — Enter your API key and start chatting immediately.
 
-1. Enter your OpenAI API key in the sidebar.
-2. Type any question in the chat input and press Enter.
-3. The assistant responds using conversational history from the current session.
+**RAG Chat mode** — Upload files, click "Index", then ask questions grounded in your documents.
 
-**RAG Chat mode**
-
-1. Enter your OpenAI API key in the sidebar.
-2. Upload one or more files using the file uploader.
-3. Click "Index Uploaded Files" to process and embed the documents.
-4. Ask questions about the document content.
-5. Expand "Retrieved Context" beneath any answer to inspect the source chunks.
-
-**Reset**
-
-Click "Reset Chat History" in the sidebar to clear all messages and indexed data.
+**Reset** — Click "Reset Chat History" to clear all messages and indexed data.
 
 ---
 
