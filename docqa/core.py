@@ -16,6 +16,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
 try:
     from langchain.chains import create_history_aware_retriever, create_retrieval_chain
     from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -28,7 +29,6 @@ except ImportError:
         create_stuff_documents_chain,
     )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 
 _LOADER_MAP = {
     ".pdf": lambda p: PyPDFLoader(p, extract_images=False),
@@ -147,22 +147,28 @@ class DocumentQA:
     @property
     def history(self) -> list[dict]:
         return [
-            {"role": "user" if isinstance(m, HumanMessage) else "assistant",
-             "content": m.content}
+            {
+                "role": "user" if isinstance(m, HumanMessage) else "assistant",
+                "content": m.content,
+            }
             for m in self._chat_history
         ]
 
     # -- internals --
 
     def _build_rag_chain(self) -> None:
-        contextualize_prompt = ChatPromptTemplate.from_messages([
-            ("system",
-             "Given a chat history and the latest user question which might "
-             "reference context in the chat history, formulate a standalone "
-             "question. Do NOT answer it, just reformulate if needed."),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ])
+        contextualize_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "Given a chat history and the latest user question which might "
+                    "reference context in the chat history, formulate a standalone "
+                    "question. Do NOT answer it, just reformulate if needed.",
+                ),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
+        )
 
         retriever = self._vector_store.as_retriever(
             search_type="similarity", search_kwargs={"k": self._retrieval_k}
@@ -171,21 +177,27 @@ class DocumentQA:
             self._llm, retriever, contextualize_prompt
         )
 
-        qa_prompt = ChatPromptTemplate.from_messages([
-            ("system",
-             "You are an assistant for question-answering tasks. "
-             "Use the provided context to answer accurately. "
-             "If the context is insufficient, say so.\n\n{context}"),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ])
+        qa_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are an assistant for question-answering tasks. "
+                    "Use the provided context to answer accurately. "
+                    "If the context is insufficient, say so.\n\n{context}",
+                ),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
+        )
         qa_chain = create_stuff_documents_chain(self._llm, qa_prompt)
         self._rag_chain = create_retrieval_chain(history_retriever, qa_chain)
 
     def _general_chain(self):
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful AI assistant. Answer concisely."),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ])
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "You are a helpful AI assistant. Answer concisely."),
+                MessagesPlaceholder("chat_history"),
+                ("human", "{input}"),
+            ]
+        )
         return prompt | self._llm | StrOutputParser()
