@@ -1,7 +1,6 @@
 """Core RAG pipeline for document question answering."""
 
 import os
-import tempfile
 from pathlib import Path
 from typing import Optional
 
